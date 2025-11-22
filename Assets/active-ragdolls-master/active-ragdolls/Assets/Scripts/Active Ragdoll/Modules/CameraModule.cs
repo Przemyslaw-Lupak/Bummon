@@ -6,10 +6,12 @@ using UnityEngine.InputSystem;
 public class CameraModule : NetworkBehaviour {
     [SerializeField] private PlayerRagdoll  _playerRagdoll;
     [SerializeField] private Animator _animatorFixed;
+    
     [Header("--- GENERAL ---")]
     [Tooltip("Where the camera should be positioned. Head by default.")]
     public Transform _cameraPoint;
     public float lookSensitivity = 2f;
+    public float keyboardRotationSpeed = 90f; // Degrees per second for A/D rotation
     public bool invertY = false;
     public bool invertX = false;
 
@@ -18,6 +20,10 @@ public class CameraModule : NetworkBehaviour {
     public float minVerticalAngle = -85;
     [Tooltip("How far can the camera look up.")]
     public float maxVerticalAngle = 85;
+    [Tooltip("How far can the camera look left/right before body turns.")]
+    public float maxHorizontalAngle = 90f; // Can look 90 degrees left/right
+    [Tooltip("When clamped, how fast does body turn to recenter camera.")]
+    public float bodyTurnSpeed = 180f; // Degrees per second
 
     [Header("--- SMOOTHING ---")]
     public bool enableSmoothing = false;
@@ -43,8 +49,10 @@ public class CameraModule : NetworkBehaviour {
     private GameObject _cameraGameObject;
     private Camera _camera;
     private Vector2 _inputDelta;
+    private float _rotationInput; // A/D keyboard rotation
     private float _yaw = 0f;
     private float _pitch = 0f;
+    private float _bodyYaw = 0f; // Track the body's rotation separately
     private Vector3 _lastHeadPosition;
     private bool _isInitialized = false;
     private float _bobTimer = 0f;
@@ -92,14 +100,11 @@ public class CameraModule : NetworkBehaviour {
         _lastHeadPosition = _cameraPoint.position;
         _isInitialized = true;
         
-        
-        
         // Lock and hide cursor for FPS controls
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }
     
-
     private void LateUpdate() {
         if (!IsOwner || !_isInitialized) return;
         
@@ -126,15 +131,33 @@ public class CameraModule : NetworkBehaviour {
         float mouseX = _inputDelta.x * lookSensitivity * (invertX ? -1 : 1);
         float mouseY = _inputDelta.y * lookSensitivity * (invertY ? -1 : 1);
 
-        // Update yaw and pitch
-        _yaw += mouseX;
+        // Add keyboard rotation (A/D)
+        float keyboardRotation = _rotationInput * keyboardRotationSpeed * Time.deltaTime;
+
+        // Update relative yaw (camera rotation relative to body)
+        _yaw += mouseX + keyboardRotation;
         _pitch -= mouseY;
         
-        // Clamp pitch
+        // Clamp pitch (vertical)
         _pitch = Mathf.Clamp(_pitch, minVerticalAngle, maxVerticalAngle);
 
-        // Apply rotation to camera only
-        Quaternion targetRotation = Quaternion.Euler(_pitch, _yaw, 0f);
+        // Handle horizontal (yaw) clamping and body rotation
+        if (_yaw > maxHorizontalAngle) {
+            // Looking too far right - turn body right
+            float turnAmount = _yaw - maxHorizontalAngle;
+            _bodyYaw += turnAmount; // Body turns right
+            _yaw = maxHorizontalAngle; // Camera stays at limit
+        } 
+        else if (_yaw < -maxHorizontalAngle) {
+            // Looking too far left - turn body left
+            float turnAmount = _yaw + maxHorizontalAngle; // Negative value
+            _bodyYaw += turnAmount; // Body turns left
+            _yaw = -maxHorizontalAngle; // Camera stays at limit
+        }
+
+        // Camera rotation is body rotation + relative camera rotation
+        float totalYaw = _bodyYaw + _yaw;
+        Quaternion targetRotation = Quaternion.Euler(_pitch, totalYaw, 0f);
         
         if (enableSmoothing) {
             _cameraGameObject.transform.rotation = Quaternion.Slerp(
@@ -148,6 +171,12 @@ public class CameraModule : NetworkBehaviour {
         
         // Reset input delta
         _inputDelta = Vector2.zero;
+        _rotationInput = 0f;
+    }
+
+    private void RotateBody(float yawDelta) {
+        // Body rotation happens automatically through PhysicsModule
+        // It uses GetCameraForward() which includes the body yaw
     }
 
     private void UpdateHeadBob() {
@@ -175,9 +204,23 @@ public class CameraModule : NetworkBehaviour {
     // Public accessor methods
     public Vector3 GetCameraForward() {
         if (_cameraGameObject != null) {
+            // Return the actual camera forward direction (includes body yaw)
             return _cameraGameObject.transform.forward;
         }
         return Vector3.forward;
+    }
+
+    public void UpdateRotationInput(float horizontalInput) {
+        // Called by PlayerMovement to pass A/D input for rotation
+        _rotationInput = horizontalInput;
+    }
+
+    public float GetBodyYaw() {
+        return _bodyYaw;
+    }
+
+    public float GetRelativeYaw() {
+        return _yaw;
     }
 
     public Transform GetCameraTransform() {

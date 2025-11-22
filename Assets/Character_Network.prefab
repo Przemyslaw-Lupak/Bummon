@@ -239,6 +239,7 @@ MonoBehaviour:
   _animatorFixed: {fileID: 1430592987183260176}
   _cameraPoint: {fileID: 5602535554971032965}
   lookSensitivity: 1
+  keyboardRotationSpeed: 90
   invertY: 0
   invertX: 0
   minVerticalAngle: -17
@@ -330,6 +331,7 @@ MonoBehaviour:
   _animationModule: {fileID: 2772057950085904008}
   _physicsModule: {fileID: 6681752138646356434}
   _movementSpeed: 5
+  _backwardSpeedMultiplier: 5
   _movementForce: 10
   _cameraModule: {fileID: 7245962641269401662}
 --- !u!114 &7410223734713720279

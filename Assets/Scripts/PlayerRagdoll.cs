@@ -12,6 +12,7 @@ namespace Brickface.Networking.Physics
         public Transform PhysicalTorso;
         public Transform FixedTorso;
         public Transform[] AnimatedBones;
+        
         [SerializeField] private int updateRate = 15;
         [SerializeField] private int _solverIterations = 12;
         [SerializeField] private int _solverVelocityIterations = 4;
@@ -20,6 +21,7 @@ namespace Brickface.Networking.Physics
         [SerializeField] private RagdollBody _ragdollBody;
         [SerializeField] private Animator _animatorFixed;
         [SerializeField] private Animator _animatorPhysics;
+        
         private Transform[] _syncedBones;
         private Rigidbody[] _allRigidbodies;
         private const int SNAPSHOT_BUFFER_SIZE = 3;
@@ -37,7 +39,7 @@ namespace Brickface.Networking.Physics
         private void Awake()
         {
             _syncedBones = _ragdollBody.GetBones();
-            _allRigidbodies = GetComponentsInChildren<Rigidbody>();  //Not sure if works, my missalign rbs with transforms tbd
+            _allRigidbodies = GetComponentsInChildren<Rigidbody>();
             _snapshotBuffer = new RagdollSnapshot[SNAPSHOT_BUFFER_SIZE];
 
             Joints = PhysicalTorso?.GetComponentsInChildren<ConfigurableJoint>();
@@ -51,28 +53,36 @@ namespace Brickface.Networking.Physics
 
         public override void OnNetworkSpawn()
         {
+            Debug.Log($"[PlayerRagdoll] OnNetworkSpawn - IsServer: {IsServer}, IsOwner: {IsOwner}, NetworkObjectId: {NetworkObjectId}");
+            
+            // Configure rigidbodies based on authority
             foreach(Rigidbody rigidbody in _allRigidbodies)
             {
                 if (IsServer)
                 {
+                    // Server: Active physics
                     rigidbody.isKinematic = false;
                     rigidbody.interpolation = RigidbodyInterpolation.Interpolate;
                     rigidbody.solverIterations = _solverIterations;
                     rigidbody.solverVelocityIterations = _solverVelocityIterations;
                     rigidbody.maxAngularVelocity = _maxAngularVelocity;
+                    Debug.Log($"[PlayerRagdoll] Server: Set {rigidbody.name} to non-kinematic");
                 }
                 else
                 {
+                    // Clients: Kinematic (receive snapshots)
                     rigidbody.isKinematic = true;
                     rigidbody.detectCollisions = false;
+                    Debug.Log($"[PlayerRagdoll] Client: Set {rigidbody.name} to kinematic");
                 }
             }
             
+            // Initialize body parts on server
             foreach(BodyPart bodyPart in _bodyParts)
             {
                 if(IsServer)
                     bodyPart.Init();
-            }   
+            }
         }
 
         void FixedUpdate()
@@ -81,8 +91,10 @@ namespace Brickface.Networking.Physics
             
             if(IsServer)
             {
+                // Server: Sync animated body and send snapshots
                 _updateTimer += Time.fixedDeltaTime;
                 SyncAnimatedBody();
+                
                 if(_updateTimer >= 1f / updateRate)
                 {
                     _updateTimer = 0f;
@@ -91,9 +103,11 @@ namespace Brickface.Networking.Physics
             }
             else
             {
+                // Clients: Apply received snapshots
                 ApplySnapshot();
             }
         }
+
         private void SendSnapshot()
         {
             Vector3[] positions = new Vector3[_syncedBones.Length];
@@ -107,10 +121,11 @@ namespace Brickface.Networking.Physics
 
             ReceiveSnapshotClientRpc(positions, rotations);
         }
+
         [ClientRpc]
         private void ReceiveSnapshotClientRpc(Vector3[] positions, Quaternion[] rotations)
         {
-            if (IsServer) return;
+            if (IsServer) return; 
             
             _snapshotIndex = (_snapshotIndex + 1) % SNAPSHOT_BUFFER_SIZE;
             _snapshotBuffer[_snapshotIndex].BonePositions = positions;
@@ -123,7 +138,7 @@ namespace Brickface.Networking.Physics
             var snapshot = _snapshotBuffer[_snapshotIndex];
             if (snapshot.BonePositions == null) return;
             
-            float lerpSpeed = updateRate * 0.5f; // Smooth interpolation
+            float lerpSpeed = updateRate * 0.5f;
             
             for (int i = 0; i < _syncedBones.Length; i++)
             {
@@ -139,12 +154,17 @@ namespace Brickface.Networking.Physics
                     Time.fixedDeltaTime * lerpSpeed
                 );
             }
+            
+            // Also sync the animated body on clients
+            SyncAnimatedBody();
         }
+
         private void SyncAnimatedBody() {
             Transform torso = _ragdollBody.GetTorso();
             _animatorFixed.transform.position = torso.position + (_animatorFixed.transform.position - torso.position);
             _animatorFixed.transform.rotation = torso.rotation;
         }
+
         private void GetDefaultBodyParts() 
         {
             _bodyParts.Add(new BodyPart("Head Neck",
@@ -168,11 +188,11 @@ namespace Brickface.Networking.Physics
                 Transform boneTransform = _animatorPhysics.GetBoneTransform(bone);
                 if (boneTransform != null && (boneTransform.TryGetComponent(out ConfigurableJoint joint)))
                     jointList.Add(joint);
-                }
+            }
             return jointList;
         }
 
-            public Transform GetAnimatedBone(HumanBodyBones bone) {
+        public Transform GetAnimatedBone(HumanBodyBones bone) {
             return _animatorFixed.GetBoneTransform(bone);
         }
 
@@ -190,13 +210,10 @@ namespace Brickface.Networking.Physics
             foreach (BodyPart bodyPart in _bodyParts)
                 bodyPart.SetStrengthScale(scale);
         }
-        
 
         public Rigidbody GetPhysicalTorsoRigidbody()
         {
             return PhysicalTorso.GetComponent<Rigidbody>();
         }
-        
     }
-
 }
