@@ -13,5 +13,7 @@ public class MainMenuScope : LifetimeScope
         
         // Register ServicesInitializer as a singleton
         builder.Register<ServicesInitializer>(Lifetime.Singleton);
+
+        builder.RegisterEntryPoint<ServicesInitializer>();
     }
 }

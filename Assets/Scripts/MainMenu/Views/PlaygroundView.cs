@@ -21,7 +21,7 @@ public class PlaygroundView : NetworkBehaviour
     private readonly ServicesInitializer _servicesInitializer;
 
     [Inject]
-    PlaygroundView(LobbyService lobbyService, ServicesInitializer servicesInitializer)
+    public PlaygroundView(LobbyService lobbyService, ServicesInitializer servicesInitializer)
     {
         _lobbyService = lobbyService;
         _servicesInitializer = servicesInitializer;
@@ -176,7 +176,7 @@ public class PlaygroundView : NetworkBehaviour
     private void UpdateLobbyUI()
     {
         // Notify UI to update
-        PlaygroundUI playgroundUI = FindObjectOfType<PlaygroundUI>();
+        PlaygroundUIView playgroundUI = FindObjectOfType<PlaygroundUIView>();
         if (playgroundUI != null)
         {
             playgroundUI.UpdatePlayerList(_lobbyPlayers);
@@ -232,7 +232,7 @@ public class PlaygroundView : NetworkBehaviour
     [ClientRpc]
     private void UpdateStartButtonStateClientRpc(bool canStart)
     {
-        PlaygroundUI playgroundUI = FindObjectOfType<PlaygroundUI>();
+        PlaygroundUIView playgroundUI = FindObjectOfType<PlaygroundUIView>();
         if (playgroundUI != null)
         {
             playgroundUI.SetStartButtonEnabled(canStart);
@@ -272,7 +272,7 @@ public class PlaygroundView : NetworkBehaviour
     [ClientRpc]
     private void ShowCountdownClientRpc()
     {
-        PlaygroundUI playgroundUI = FindObjectOfType<PlaygroundUI>();
+        PlaygroundUIView playgroundUI = FindObjectOfType<PlaygroundUIView>();
         if (playgroundUI != null)
         {
             playgroundUI.ShowCountdown();

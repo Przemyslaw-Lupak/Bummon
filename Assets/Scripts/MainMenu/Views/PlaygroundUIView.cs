@@ -7,11 +7,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using VContainer;
 
-/// <summary>
-/// Simple UI overlay for the Playground lobby
-/// Shows lobby code, player list, and ready/start buttons
-/// </summary>
-public class PlaygroundUI : MonoBehaviour
+public class PlaygroundUIView : MonoBehaviour
 {
     [Header("Top Panel")]
     [SerializeField] private TextMeshProUGUI lobbyCodeText;
@@ -36,7 +32,7 @@ public class PlaygroundUI : MonoBehaviour
     private readonly LobbyService _lobbyService;
 
     [Inject]
-    PlaygroundUI(LobbyService lobbyService)
+    public PlaygroundUIView(LobbyService lobbyService)
     {
         _lobbyService = lobbyService;
     }
