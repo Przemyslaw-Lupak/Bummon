@@ -10,26 +10,13 @@ using UnityEngine;
 /// Manages Unity Relay connections
 /// Handles creating and joining Relay allocations
 /// </summary>
-public class RelayService : MonoBehaviour
-{
-    public static RelayService Instance { get; private set; }
-    
+public class RelayService
+{    
     public string JoinCode { get; private set; }
     public bool IsRelayEnabled => Transport != null;
     
     private UnityTransport Transport => NetworkManager.Singleton?.GetComponent<UnityTransport>();
     
-    void Awake()
-    {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        
-        Instance = this;
-        DontDestroyOnLoad(gameObject);
-    }
     
     /// <summary>
     /// Creates a Relay allocation as host

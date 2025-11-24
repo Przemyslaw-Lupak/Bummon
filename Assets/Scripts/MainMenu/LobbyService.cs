@@ -4,36 +4,27 @@ using System.Threading.Tasks;
 using Unity.Services.Lobbies;
 using Unity.Services.Lobbies.Models;
 using UnityEngine;
+using VContainer;
+using VContainer.Unity;
 
-/// <summary>
-/// Manages Unity Lobby Service
-/// Handles creating, joining, and querying lobbies
-/// </summary>
-public class LobbyService : MonoBehaviour
-{
-    public static LobbyService Instance { get; private set; }
-    
+public class LobbyService : ITickable
+{    
     public Lobby CurrentLobby { get; private set; }
-    public bool IsHost => CurrentLobby != null && CurrentLobby.HostId == ServicesInitializer.Instance.PlayerId;
+    private readonly ServicesInitializer _servicesInitializer;
+    public bool IsHost => CurrentLobby != null && CurrentLobby.HostId == _servicesInitializer.PlayerId;
     
     private float _heartbeatTimer;
     private float _lobbyUpdateTimer;
     private const float HEARTBEAT_INTERVAL = 15f; // Lobby expires without heartbeat every 30 seconds
     private const float LOBBY_UPDATE_INTERVAL = 1.1f; // Poll for lobby updates
     
-    void Awake()
+    [Inject]
+    public LobbyService(ServicesInitializer servicesInitializer)
     {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        
-        Instance = this;
-        DontDestroyOnLoad(gameObject);
+        _servicesInitializer = servicesInitializer;
     }
-    
-    void Update()
+
+    public void Tick()
     {
         if (CurrentLobby == null) return;
         
@@ -57,9 +48,7 @@ public class LobbyService : MonoBehaviour
         }
     }
     
-    /// <summary>
-    /// Creates a new lobby
-    /// </summary>
+    
     public async Task<Lobby> CreateLobbyAsync(string lobbyName, int maxPlayers, bool isPrivate, string relayJoinCode)
     {
         try
@@ -158,7 +147,7 @@ public class LobbyService : MonoBehaviour
         try
         {
             string lobbyId = CurrentLobby.Id;
-            string playerId = ServicesInitializer.Instance.PlayerId;
+            string playerId = _servicesInitializer.PlayerId;
             
             await Unity.Services.Lobbies.LobbyService.Instance.RemovePlayerAsync(lobbyId, playerId);
             
@@ -210,7 +199,7 @@ public class LobbyService : MonoBehaviour
         {
             Data = new Dictionary<string, PlayerDataObject>
             {
-                { "PlayerName", new PlayerDataObject(PlayerDataObject.VisibilityOptions.Public, ServicesInitializer.Instance.PlayerName) }
+                { "PlayerName", new PlayerDataObject(PlayerDataObject.VisibilityOptions.Public, _servicesInitializer.PlayerName) }
             }
         };
     }
@@ -239,7 +228,7 @@ public class LobbyService : MonoBehaviour
         }
     }
     
-    async Task OnDestroy()
+    public async Task OnDestroy()
     {
         // Clean up on quit
         if (CurrentLobby != null)

@@ -3,8 +3,9 @@ using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using VContainer;
 
-public class PlaygroundManager : NetworkBehaviour
+public class PlaygroundView : NetworkBehaviour
 {
     [Header("Spawning")]
     [SerializeField] private Transform[] spawnPoints;
@@ -15,6 +16,16 @@ public class PlaygroundManager : NetworkBehaviour
     
     private NetworkList<PlayerLobbyData> _lobbyPlayers;
     private int _nextSpawnIndex = 0;
+
+    private readonly LobbyService _lobbyService;
+    private readonly ServicesInitializer _servicesInitializer;
+
+    [Inject]
+    PlaygroundView(LobbyService lobbyService, ServicesInitializer servicesInitializer)
+    {
+        _lobbyService = lobbyService;
+        _servicesInitializer = servicesInitializer;
+    }
     
     public struct PlayerLobbyData : INetworkSerializable, System.IEquatable<PlayerLobbyData>
     {
@@ -128,7 +139,7 @@ public class PlaygroundManager : NetworkBehaviour
     {
         if (!IsServer) return;
         
-        string playerName = ServicesInitializer.Instance.PlayerName;
+        string playerName = _servicesInitializer.PlayerName;
         
         var playerData = new PlayerLobbyData
         {
@@ -287,9 +298,9 @@ public class PlaygroundManager : NetworkBehaviour
     
     public string GetLobbyCode()
     {
-        if (LobbyService.Instance.CurrentLobby != null)
+        if (_lobbyService.CurrentLobby != null)
         {
-            return LobbyService.Instance.CurrentLobby.LobbyCode;
+            return _lobbyService.CurrentLobby.LobbyCode;
         }
         return "N/A";
     }

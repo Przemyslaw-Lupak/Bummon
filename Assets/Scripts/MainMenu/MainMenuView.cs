@@ -4,11 +4,8 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using VContainer;
 
-/// <summary>
-/// Main Menu UI controller
-/// Handles host/join panels and lobby browser
-/// </summary>
 public class MainMenuView : MonoBehaviour
 {
     [Header("Panels")]
@@ -39,11 +36,22 @@ public class MainMenuView : MonoBehaviour
     [SerializeField] private string lobbySceneName = "Playground";
     [SerializeField] private int maxPlayers = 4;
     private List<GameObject> _lobbyListItems = new List<GameObject>();
+    private readonly ServicesInitializer _servicesInitializer;
+    private readonly RelayService _relayService;
+    private readonly LobbyService _lobbyService;
     
+    [Inject]
+    public MainMenuView(ServicesInitializer servicesInitializer, RelayService relayService, LobbyService lobbyService)
+    {
+        _servicesInitializer = servicesInitializer;
+        _relayService = relayService;
+        _lobbyService = lobbyService;
+    }
+
     void Start()
     {
         // Wait for services to initialize
-        if (!ServicesInitializer.Instance.IsInitialized)
+        if (!_servicesInitializer.IsInitialized)
         {
             SetStatus("Initializing services...");
             Invoke(nameof(CheckServicesReady), 0.5f);
@@ -60,7 +68,7 @@ public class MainMenuView : MonoBehaviour
         refreshButton.onClick.AddListener(OnRefreshLobbiesClicked);
         
         // Default lobby name
-        lobbyNameInput.text = $"{ServicesInitializer.Instance.PlayerName}'s Game";
+        lobbyNameInput.text = $"{_servicesInitializer.PlayerName}'s Game";
         
         // Show main panel
         ShowMainPanel();
@@ -68,7 +76,7 @@ public class MainMenuView : MonoBehaviour
     
     private void CheckServicesReady()
     {
-        if (ServicesInitializer.Instance.IsInitialized)
+        if (_servicesInitializer.IsInitialized)
         {
             OnServicesReady();
         }
@@ -80,7 +88,7 @@ public class MainMenuView : MonoBehaviour
     
     private void OnServicesReady()
     {
-        SetStatus($"Welcome, {ServicesInitializer.Instance.PlayerName}!");
+        SetStatus($"Welcome, {_servicesInitializer.PlayerName}!");
     }
     
     // Panel navigation
@@ -134,7 +142,7 @@ public class MainMenuView : MonoBehaviour
         try
         {
             // Create Relay
-            string relayJoinCode = await RelayService.Instance.CreateRelayAsync(maxPlayers);
+            string relayJoinCode = await _relayService.CreateRelayAsync(maxPlayers);
             if (relayJoinCode == null)
             {
                 SetStatus("Failed to create Relay");
@@ -145,7 +153,7 @@ public class MainMenuView : MonoBehaviour
             SetStatus("Creating lobby...");
             
             // Create Lobby
-            var lobby = await LobbyService.Instance.CreateLobbyAsync(lobbyName, maxPlayers, isPrivate, relayJoinCode);
+            var lobby = await _lobbyService.CreateLobbyAsync(lobbyName, maxPlayers, isPrivate, relayJoinCode);
             if (lobby == null)
             {
                 SetStatus("Failed to create lobby");
@@ -186,7 +194,7 @@ public class MainMenuView : MonoBehaviour
         try
         {
             // Join lobby
-            var lobby = await LobbyService.Instance.JoinLobbyByCodeAsync(code);
+            var lobby = await _lobbyService.JoinLobbyByCodeAsync(code);
             if (lobby == null)
             {
                 SetStatus("Failed to join lobby. Check the code.");
@@ -197,7 +205,7 @@ public class MainMenuView : MonoBehaviour
             SetStatus("Connecting to Relay...");
             
             // Get Relay code from lobby
-            string relayJoinCode = LobbyService.Instance.GetRelayJoinCode();
+            string relayJoinCode = _lobbyService.GetRelayJoinCode();
             if (string.IsNullOrEmpty(relayJoinCode))
             {
                 SetStatus("Lobby has no Relay code");
@@ -206,7 +214,7 @@ public class MainMenuView : MonoBehaviour
             }
             
             // Join Relay
-            bool joined = await RelayService.Instance.JoinRelayAsync(relayJoinCode);
+            bool joined = await _relayService.JoinRelayAsync(relayJoinCode);
             if (!joined)
             {
                 SetStatus("Failed to connect to Relay");
@@ -251,7 +259,7 @@ public class MainMenuView : MonoBehaviour
         try
         {
             // Query lobbies
-            var lobbies = await LobbyService.Instance.QueryLobbiesAsync();
+            var lobbies = await _lobbyService.QueryLobbiesAsync();
             
             if (lobbies.Count == 0)
             {
@@ -288,7 +296,6 @@ public class MainMenuView : MonoBehaviour
         GameObject item = Instantiate(lobbyListItemPrefab, lobbyListContent);
         _lobbyListItems.Add(item);
         
-        // Setup item (you'll create this script next)
         var lobbyItem = item.GetComponent<LobbyListItem>();
         if (lobbyItem != null)
         {
@@ -303,7 +310,7 @@ public class MainMenuView : MonoBehaviour
         try
         {
             // Join lobby
-            var joinedLobby = await LobbyService.Instance.JoinLobbyByCodeAsync(lobby.LobbyCode);
+            var joinedLobby = await _lobbyService.JoinLobbyByCodeAsync(lobby.LobbyCode);
             if (joinedLobby == null)
             {
                 SetStatus("Failed to join lobby");
@@ -311,10 +318,10 @@ public class MainMenuView : MonoBehaviour
             }
             
             // Get Relay code
-            string relayJoinCode = LobbyService.Instance.GetRelayJoinCode();
+            string relayJoinCode = _lobbyService.GetRelayJoinCode();
             
             // Join Relay
-            bool joined = await RelayService.Instance.JoinRelayAsync(relayJoinCode);
+            bool joined = await _relayService.JoinRelayAsync(relayJoinCode);
             if (!joined)
             {
                 SetStatus("Failed to connect to Relay");

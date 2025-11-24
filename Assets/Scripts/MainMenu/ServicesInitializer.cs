@@ -2,27 +2,16 @@ using System.Threading.Tasks;
 using Unity.Services.Core;
 using Unity.Services.Authentication;
 using UnityEngine;
+using VContainer.Unity;
 
-public class ServicesInitializer : MonoBehaviour
+public class ServicesInitializer : IInitializable
 {
-    public static ServicesInitializer Instance { get; private set; }
-    
     public string PlayerName { get; private set; }
     public string PlayerId { get; private set; }
     public bool IsInitialized { get; private set; }
     
-    async void Awake()
-    {
-        // Singleton pattern
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        
-        Instance = this;
-        DontDestroyOnLoad(gameObject);
-        
+    public async void Initialize()
+    {   
         await InitializeServices();
     }
     

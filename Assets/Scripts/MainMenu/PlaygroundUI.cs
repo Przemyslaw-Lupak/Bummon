@@ -2,8 +2,10 @@ using System.Collections;
 using TMPro;
 using Unity.Collections;
 using Unity.Netcode;
+using Unity.Services.Lobbies.Models;
 using UnityEngine;
 using UnityEngine.UI;
+using VContainer;
 
 /// <summary>
 /// Simple UI overlay for the Playground lobby
@@ -29,12 +31,18 @@ public class PlaygroundUI : MonoBehaviour
     [SerializeField] private GameObject countdownPanel;
     [SerializeField] private TextMeshProUGUI countdownText;
     
-    private PlaygroundManager _playgroundManager;
+    private PlaygroundView _playgroundManager;
     private bool _isReady = false;
-    
+    private readonly LobbyService _lobbyService;
+
+    [Inject]
+    PlaygroundUI(LobbyService lobbyService)
+    {
+        _lobbyService = lobbyService;
+    }
     void Start()
     {
-        _playgroundManager = FindObjectOfType<PlaygroundManager>();
+        _playgroundManager = FindFirstObjectByType<PlaygroundView>();
         
         if (_playgroundManager == null)
         {
@@ -87,7 +95,7 @@ public class PlaygroundUI : MonoBehaviour
         }
     }
     
-    public void UpdatePlayerList(NetworkList<PlaygroundManager.PlayerLobbyData> players)
+    public void UpdatePlayerList(NetworkList<PlaygroundView.PlayerLobbyData> players)
     {
         if (playerListContent == null || playerListItemPrefab == null) return;
         
@@ -165,15 +173,15 @@ public class PlaygroundUI : MonoBehaviour
         }
         
         // Clean up lobby
-        if (LobbyService.Instance.CurrentLobby != null)
+        if (_lobbyService.CurrentLobby != null)
         {
-            if (LobbyService.Instance.IsHost)
+            if (_lobbyService.IsHost)
             {
-                LobbyService.Instance.DeleteLobbyAsync();
+                _lobbyService.DeleteLobbyAsync();
             }
             else
             {
-                LobbyService.Instance.LeaveLobbyAsync();
+                _lobbyService.LeaveLobbyAsync();
             }
         }
         
