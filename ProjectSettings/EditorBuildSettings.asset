@@ -9,11 +9,14 @@ EditorBuildSettings:
     path: Assets/Scenes/SampleScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
   - enabled: 1
-    path: Assets/Starter Assets/Sample/FirstPersonController/Playground.unity
+    path: Assets/Starter Assets/Sample/FirstPersonController/Playground2.unity
     guid: 707acc8dffb72b144bb1ffbe1c965f3d
   - enabled: 1
-    path: Assets/active-ragdolls-master/active-ragdolls/Assets/Scenes/Demo.unity
+    path: Assets/Scenes/Playground.unity
     guid: 9fc0d4010bbf28b4594072e72b8655ab
+  - enabled: 1
+    path: Assets/Scenes/MainMenu.unity
+    guid: ab044b40fea2d436196a289545d4daa3
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0
