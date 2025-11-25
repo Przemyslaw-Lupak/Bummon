@@ -36,20 +36,25 @@ public class MainMenuView : MonoBehaviour
     [SerializeField] private string lobbySceneName = "Playground";
     [SerializeField] private int maxPlayers = 4;
     private List<GameObject> _lobbyListItems = new List<GameObject>();
-    private readonly ServicesInitializer _servicesInitializer;
-    private readonly RelayService _relayService;
-    private readonly LobbyService _lobbyService;
+    private  ServicesInitializer _servicesInitializer;
+    private  RelayService _relayService;
+    private  LobbyService _lobbyService;
     
     [Inject]
-    public MainMenuView(ServicesInitializer servicesInitializer, RelayService relayService, LobbyService lobbyService)
+    public void Construct(ServicesInitializer servicesInitializer, RelayService relayService, LobbyService lobbyService)
     {
         _servicesInitializer = servicesInitializer;
         _relayService = relayService;
         _lobbyService = lobbyService;
     }
 
-    void Start()
+    void Awake()
     {
+         if (_servicesInitializer == null)
+        {
+            SetStatus("Waiting for dependency injection...");
+            return;
+        }
         // Wait for services to initialize
         if (!_servicesInitializer.IsInitialized)
         {

@@ -4,8 +4,11 @@ using VContainer.Unity;
 
 public class MainMenuScope : LifetimeScope
 {
+    [SerializeField] private MainMenuView mainMenuViewPrefab;
+
     protected override void Configure(IContainerBuilder builder)
     {
+        builder.RegisterComponent(mainMenuViewPrefab);
         builder.Register<LobbyService>(Lifetime.Singleton);
         
         // Register RelayService as a singleton

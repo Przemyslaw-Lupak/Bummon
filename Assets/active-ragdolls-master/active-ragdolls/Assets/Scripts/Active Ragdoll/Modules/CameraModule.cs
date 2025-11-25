@@ -91,6 +91,7 @@ public class CameraModule : NetworkBehaviour {
         
         // Add AudioListener
         _cameraGameObject.AddComponent<AudioListener>();
+        DontDestroyOnLoad(_cameraGameObject);
 
         // Initialize rotation
         _yaw = 0f;
