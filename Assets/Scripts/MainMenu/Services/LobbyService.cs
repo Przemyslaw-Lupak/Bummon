@@ -227,7 +227,25 @@ public class LobbyService : ITickable
             Debug.LogError($"[LobbyManager] Lobby poll failed: {e.Message}");
         }
     }
-    
+    public void SetLobbyPrivacy(bool privateStatus)
+    {
+        if (CurrentLobby == null || !IsHost) return;
+
+        try
+        {
+            var options = new UpdateLobbyOptions
+            {
+                IsPrivate = privateStatus
+            };
+
+            Unity.Services.Lobbies.LobbyService.Instance.UpdateLobbyAsync(CurrentLobby.Id, options).Wait();
+            Debug.Log($"[LobbyManager] Lobby privacy set to: {(privateStatus ? "Private" : "Public")}");
+        }
+        catch (LobbyServiceException e)
+        {
+            Debug.LogError($"[LobbyManager] Failed to update lobby privacy: {e.Message}");
+        }
+    }
     public async Task OnDestroy()
     {
         // Clean up on quit

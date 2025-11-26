@@ -4,11 +4,12 @@ using VContainer.Unity;
 
 public class MainMenuScope : LifetimeScope
 {
-    [SerializeField] private MainMenuView mainMenuViewPrefab;
-
+    [SerializeField] private MainMenuView mainMenuView;
+    [SerializeField] private JoinPanelView joinPanelView;
     protected override void Configure(IContainerBuilder builder)
     {
-        builder.RegisterComponent(mainMenuViewPrefab);
+        builder.RegisterComponent(mainMenuView);
+        builder.RegisterComponent(joinPanelView);
         builder.Register<LobbyService>(Lifetime.Singleton);
         
         // Register RelayService as a singleton
