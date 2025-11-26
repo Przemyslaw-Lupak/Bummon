@@ -3,6 +3,7 @@ using Brickface.Networking.Physics;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using VContainer;
 
 public class InputModule : NetworkBehaviour {
     [SerializeField] protected PlayerRagdoll _playerRagdoll;
@@ -18,6 +19,8 @@ public class InputModule : NetworkBehaviour {
     
     public delegate void onFloorChangedDelegate(bool onFloor);
     public onFloorChangedDelegate OnFloorChangedDelegates { get; set; }
+
+
 
     [Header("--- FLOOR ---")]
     public float floorDetectionDistance = 0.3f;

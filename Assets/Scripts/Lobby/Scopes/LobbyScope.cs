@@ -11,3 +11,4 @@ public class LobbyScope : LifetimeScope
         builder.RegisterComponent(lobbyView);
     }
 }
+

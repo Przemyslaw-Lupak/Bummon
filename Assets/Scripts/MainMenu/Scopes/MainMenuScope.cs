@@ -20,4 +20,9 @@ public class MainMenuScope : LifetimeScope
 
         builder.RegisterEntryPoint<ServicesInitializer>();
     }
+    protected override void Awake()
+    {
+        base.Awake();
+        DontDestroyOnLoad(gameObject);
+    }
 }
