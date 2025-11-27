@@ -10,25 +10,26 @@ using VContainer.Unity;
 public class LobbyService : ITickable
 {    
     public Lobby CurrentLobby { get; private set; }
-    private readonly ServicesInitializer _servicesInitializer;
-    public bool IsHost => CurrentLobby != null && CurrentLobby.HostId == _servicesInitializer.PlayerId;
+    private readonly PlayerIdentityService _playerIdentityService;
+    
+    public bool IsHost => CurrentLobby != null && 
+                          CurrentLobby.HostId == _playerIdentityService.PlayerId;
     
     private float _heartbeatTimer;
     private float _lobbyUpdateTimer;
-    private const float HEARTBEAT_INTERVAL = 15f; // Lobby expires without heartbeat every 30 seconds
-    private const float LOBBY_UPDATE_INTERVAL = 1.1f; // Poll for lobby updates
+    private const float HEARTBEAT_INTERVAL = 15f;
+    private const float LOBBY_UPDATE_INTERVAL = 1.1f;
     
     [Inject]
-    public LobbyService(ServicesInitializer servicesInitializer)
+    public LobbyService(PlayerIdentityService playerIdentityService)
     {
-        _servicesInitializer = servicesInitializer;
+        _playerIdentityService = playerIdentityService;
     }
 
     public void Tick()
     {
         if (CurrentLobby == null) return;
         
-        // Send heartbeat if host
         if (IsHost)
         {
             _heartbeatTimer += Time.deltaTime;
@@ -39,7 +40,6 @@ public class LobbyService : ITickable
             }
         }
         
-        // Poll for lobby updates
         _lobbyUpdateTimer += Time.deltaTime;
         if (_lobbyUpdateTimer >= LOBBY_UPDATE_INTERVAL)
         {
@@ -48,12 +48,12 @@ public class LobbyService : ITickable
         }
     }
     
-    
     public async Task<Lobby> CreateLobbyAsync(string lobbyName, int maxPlayers, bool isPrivate, string relayJoinCode)
     {
         try
         {
-            Debug.Log($"[LobbyManager] Creating lobby: {lobbyName} (Max: {maxPlayers}, Private: {isPrivate})");
+            Debug.Log($"[LobbyService] Creating lobby: {lobbyName} (Max: {maxPlayers}, Private: {isPrivate})");
+            Debug.Log($"[LobbyService] Player creating lobby - ID: {_playerIdentityService.PlayerId}");
             
             CreateLobbyOptions options = new CreateLobbyOptions
             {
@@ -67,24 +67,21 @@ public class LobbyService : ITickable
 
             CurrentLobby = await Unity.Services.Lobbies.LobbyService.Instance.CreateLobbyAsync(lobbyName, maxPlayers, options);
             
-            Debug.Log($"[LobbyManager] Lobby created! Code: {CurrentLobby.LobbyCode}");
+            Debug.Log($"[LobbyService] ✓ Lobby created! Code: {CurrentLobby.LobbyCode}, HostId: {CurrentLobby.HostId}, IsHost: {IsHost}");
             return CurrentLobby;
         }
         catch (LobbyServiceException e)
         {
-            Debug.LogError($"[LobbyManager] Failed to create lobby: {e.Message}");
+            Debug.LogError($"[LobbyService] Failed to create lobby: {e.Message}");
             return null;
         }
     }
     
-    /// <summary>
-    /// Joins a lobby by code
-    /// </summary>
     public async Task<Lobby> JoinLobbyByCodeAsync(string lobbyCode)
     {
         try
         {
-            Debug.Log($"[LobbyManager] Joining lobby with code: {lobbyCode}");
+            Debug.Log($"[LobbyService] Joining lobby with code: {lobbyCode}");
             
             JoinLobbyByCodeOptions options = new JoinLobbyByCodeOptions
             {
@@ -93,24 +90,21 @@ public class LobbyService : ITickable
 
             CurrentLobby = await Unity.Services.Lobbies.LobbyService.Instance.JoinLobbyByCodeAsync(lobbyCode, options);
             
-            Debug.Log($"[LobbyManager] Joined lobby: {CurrentLobby.Name}");
+            Debug.Log($"[LobbyService] Joined lobby: {CurrentLobby.Name}");
             return CurrentLobby;
         }
         catch (LobbyServiceException e)
         {
-            Debug.LogError($"[LobbyManager] Failed to join lobby: {e.Message}");
+            Debug.LogError($"[LobbyService] Failed to join lobby: {e.Message}");
             return null;
         }
     }
     
-    /// <summary>
-    /// Queries available public lobbies
-    /// </summary>
     public async Task<List<Lobby>> QueryLobbiesAsync()
     {
         try
         {
-            Debug.Log("[LobbyManager] Querying lobbies...");
+            Debug.Log("[LobbyService] Querying lobbies...");
             
             QueryLobbiesOptions options = new QueryLobbiesOptions
             {
@@ -127,19 +121,16 @@ public class LobbyService : ITickable
 
             QueryResponse response = await Unity.Services.Lobbies.LobbyService.Instance.QueryLobbiesAsync(options);
             
-            Debug.Log($"[LobbyManager] Found {response.Results.Count} lobbies");
+            Debug.Log($"[LobbyService] Found {response.Results.Count} lobbies");
             return response.Results;
         }
         catch (LobbyServiceException e)
         {
-            Debug.LogError($"[LobbyManager] Failed to query lobbies: {e.Message}");
+            Debug.LogError($"[LobbyService] Failed to query lobbies: {e.Message}");
             return new List<Lobby>();
         }
     }
     
-    /// <summary>
-    /// Leaves the current lobby
-    /// </summary>
     public async Task LeaveLobbyAsync()
     {
         if (CurrentLobby == null) return;
@@ -147,22 +138,19 @@ public class LobbyService : ITickable
         try
         {
             string lobbyId = CurrentLobby.Id;
-            string playerId = _servicesInitializer.PlayerId;
+            string playerId = _playerIdentityService.PlayerId;
             
             await Unity.Services.Lobbies.LobbyService.Instance.RemovePlayerAsync(lobbyId, playerId);
             
-            Debug.Log("[LobbyManager] Left lobby");
+            Debug.Log("[LobbyService] Left lobby");
             CurrentLobby = null;
         }
         catch (LobbyServiceException e)
         {
-            Debug.LogError($"[LobbyManager] Failed to leave lobby: {e.Message}");
+            Debug.LogError($"[LobbyService] Failed to leave lobby: {e.Message}");
         }
     }
     
-    /// <summary>
-    /// Deletes the lobby (host only)
-    /// </summary>
     public async Task DeleteLobbyAsync()
     {
         if (CurrentLobby == null || !IsHost) return;
@@ -170,18 +158,15 @@ public class LobbyService : ITickable
         try
         {
             await Unity.Services.Lobbies.LobbyService.Instance.DeleteLobbyAsync(CurrentLobby.Id);
-            Debug.Log("[LobbyManager] Lobby deleted");
+            Debug.Log("[LobbyService] Lobby deleted");
             CurrentLobby = null;
         }
         catch (LobbyServiceException e)
         {
-            Debug.LogError($"[LobbyManager] Failed to delete lobby: {e.Message}");
+            Debug.LogError($"[LobbyService] Failed to delete lobby: {e.Message}");
         }
     }
     
-    /// <summary>
-    /// Gets the Relay join code stored in lobby data
-    /// </summary>
     public string GetRelayJoinCode()
     {
         if (CurrentLobby?.Data != null && CurrentLobby.Data.ContainsKey("RelayJoinCode"))
@@ -191,15 +176,13 @@ public class LobbyService : ITickable
         return null;
     }
     
-    // Private helper methods
-    
     private Player GetPlayer()
     {
         return new Player
         {
             Data = new Dictionary<string, PlayerDataObject>
             {
-                { "PlayerName", new PlayerDataObject(PlayerDataObject.VisibilityOptions.Public, _servicesInitializer.PlayerName) }
+                { "PlayerName", new PlayerDataObject(PlayerDataObject.VisibilityOptions.Public, _playerIdentityService.PlayerName) }
             }
         };
     }
@@ -212,7 +195,7 @@ public class LobbyService : ITickable
         }
         catch (LobbyServiceException e)
         {
-            Debug.LogError($"[LobbyManager] Heartbeat failed: {e.Message}");
+            Debug.LogError($"[LobbyService] Heartbeat failed: {e.Message}");
         }
     }
     
@@ -224,31 +207,45 @@ public class LobbyService : ITickable
         }
         catch (LobbyServiceException e)
         {
-            Debug.LogError($"[LobbyManager] Lobby poll failed: {e.Message}");
+            Debug.LogError($"[LobbyService] Lobby poll failed: {e.Message}");
         }
     }
-    public void SetLobbyPrivacy(bool privateStatus)
+    
+    public async Task SetLobbyPrivacyAsync(bool privateStatus)
     {
-        if (CurrentLobby == null || !IsHost) return;
+        if (CurrentLobby == null)
+        {
+            Debug.LogWarning("[LobbyService] Cannot set privacy - no current lobby");
+            return;
+        }
+        
+        if (!IsHost)
+        {
+            Debug.LogWarning($"[LobbyService] Cannot set privacy - not host. CurrentPlayerId: {_playerIdentityService.PlayerId}, HostId: {CurrentLobby.HostId}");
+            return;
+        }
 
         try
         {
+            Debug.Log($"[LobbyService] Setting lobby privacy to: {(privateStatus ? "Private" : "Public")}");
+            
             var options = new UpdateLobbyOptions
             {
                 IsPrivate = privateStatus
             };
 
-            Unity.Services.Lobbies.LobbyService.Instance.UpdateLobbyAsync(CurrentLobby.Id, options).Wait();
-            Debug.Log($"[LobbyManager] Lobby privacy set to: {(privateStatus ? "Private" : "Public")}");
+            CurrentLobby = await Unity.Services.Lobbies.LobbyService.Instance.UpdateLobbyAsync(CurrentLobby.Id, options);
+            
+            Debug.Log($"[LobbyService] ✓ Lobby privacy updated! IsPrivate is now: {CurrentLobby.IsPrivate}");
         }
         catch (LobbyServiceException e)
         {
-            Debug.LogError($"[LobbyManager] Failed to update lobby privacy: {e.Message}");
+            Debug.LogError($"[LobbyService] Failed to update lobby privacy: {e.Message}");
         }
     }
+    
     public async Task OnDestroy()
     {
-        // Clean up on quit
         if (CurrentLobby != null)
         {
             if (IsHost)

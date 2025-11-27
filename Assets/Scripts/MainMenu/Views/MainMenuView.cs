@@ -52,7 +52,7 @@ public class MainMenuView : MonoBehaviour
             statusView.SetStatus("Waiting for dependency injection...");
             return;
         }
-        // Wait for services to initialize
+
         if (!_servicesInitializer.IsInitialized)
         {
             statusView.SetStatus("Initializing services...");
@@ -63,16 +63,11 @@ public class MainMenuView : MonoBehaviour
             OnServicesReady();
         }
         
-        // Setup button listeners
         createLobbyButton.onClick.AddListener(OnCreateLobbyClicked);
         joinButton.onClick.AddListener(ShowJoinPanel);
         lobbyListButton.onClick.AddListener(ShowBrowserPanel);
         refreshButton.onClick.AddListener(OnRefreshLobbiesClicked);
         
-        // Default lobby name
-        // lobbyNameInput.text = $"{_servicesInitializer.PlayerName}'s Game";
-        
-        // Show main panel
         ShowMainPanel();
     }
     
@@ -90,7 +85,7 @@ public class MainMenuView : MonoBehaviour
     
     private void OnServicesReady()
     {
-        statusView.SetStatus($"Welcome, {_servicesInitializer.PlayerName}!");
+        // statusView.SetStatus($"Welcome, {_servicesInitializer.PlayerName}!");
     }
     
     // Panel navigation

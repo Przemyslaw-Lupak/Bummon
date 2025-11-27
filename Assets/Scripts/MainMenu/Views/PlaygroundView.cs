@@ -19,12 +19,14 @@ public class PlaygroundView : NetworkBehaviour
 
     private readonly LobbyService _lobbyService;
     private readonly ServicesInitializer _servicesInitializer;
+    private readonly PlayerIdentityService _playerIdService;
 
     [Inject]
-    public PlaygroundView(LobbyService lobbyService, ServicesInitializer servicesInitializer)
+    public PlaygroundView(LobbyService lobbyService, ServicesInitializer servicesInitializer, PlayerIdentityService playerIdentityService)
     {
         _lobbyService = lobbyService;
         _servicesInitializer = servicesInitializer;
+        _playerIdService = playerIdentityService;
     }
     
     public struct PlayerLobbyData : INetworkSerializable, System.IEquatable<PlayerLobbyData>
@@ -139,7 +141,7 @@ public class PlaygroundView : NetworkBehaviour
     {
         if (!IsServer) return;
         
-        string playerName = _servicesInitializer.PlayerName;
+        string playerName = _playerIdService.PlayerName;
         
         var playerData = new PlayerLobbyData
         {

@@ -6,10 +6,15 @@ using VContainer.Unity;
 
 public class ServicesInitializer : IInitializable
 {
-    public string PlayerName { get; private set; }
-    public string PlayerId { get; private set; }
     public bool IsInitialized { get; private set; }
     
+    private readonly PlayerIdentityService _playerIdentityService;
+    
+    public ServicesInitializer(PlayerIdentityService playerIdentityService)
+    {
+        _playerIdentityService = playerIdentityService;
+    }
+
     public async void Initialize()
     {   
         await InitializeServices();
@@ -17,26 +22,24 @@ public class ServicesInitializer : IInitializable
     
     private async Task InitializeServices()
     {
-        try
+       try
         {
-            Debug.Log("[ServicesManager] Initializing Unity Services...");
+            Debug.Log("[ServicesInitializer] Initializing Unity Services...");
+            
             await UnityServices.InitializeAsync();
             
-            Debug.Log("[ServicesManager] Authenticating...");
-            await AuthenticationService.Instance.SignInAnonymouslyAsync();
-            
-            PlayerId = AuthenticationService.Instance.PlayerId;
-            
-            PlayerName = PlayerPrefs.GetString("PlayerName", "");
-            if (string.IsNullOrEmpty(PlayerName))
+            if (!AuthenticationService.Instance.IsSignedIn)
             {
-                PlayerName = GenerateRandomName();
-                PlayerPrefs.SetString("PlayerName", PlayerName);
-                PlayerPrefs.Save();
+                await AuthenticationService.Instance.SignInAnonymouslyAsync();
             }
             
-            IsInitialized = true;
-            Debug.Log($"[ServicesManager] Services initialized! Player: {PlayerName} (ID: {PlayerId})");
+            string playerId = AuthenticationService.Instance.PlayerId;
+            string playerName = GenerateRandomName();
+            
+            // Initialize player identity
+            _playerIdentityService.Initialize(playerId, playerName);
+            
+            Debug.Log($"[ServicesInitializer] ✓ Services initialized! PlayerId: {playerId}");
         }
         catch (System.Exception e)
         {
@@ -50,16 +53,5 @@ public class ServicesInitializer : IInitializable
         string[] nouns = { "Warrior", "Hunter", "Fighter", "Champion", "Hero", "Raider", "Knight", "Slayer" };
         
         return $"{adjectives[Random.Range(0, adjectives.Length)]} {nouns[Random.Range(0, nouns.Length)]}";
-    }
-    
-    public void SetPlayerName(string newName)
-    {
-        if (!string.IsNullOrEmpty(newName))
-        {
-            PlayerName = newName;
-            PlayerPrefs.SetString("PlayerName", newName);
-            PlayerPrefs.Save();
-            Debug.Log($"[ServicesManager] Player name changed to: {PlayerName}");
-        }
     }
 }
