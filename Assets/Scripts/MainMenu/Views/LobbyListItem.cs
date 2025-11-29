@@ -23,9 +23,11 @@ public class LobbyListItem : MonoBehaviour
         _lobby = lobby;
         _mainMenuUI = mainMenuUI;
         
+        // Set lobby info
         lobbyNameText.text = lobby.Name;
         playerCountText.text = $"{lobby.Players.Count}/{lobby.MaxPlayers}";
         
+        // Get host name from player data
         string hostName = "Unknown";
         foreach (var player in lobby.Players)
         {
@@ -40,9 +42,11 @@ public class LobbyListItem : MonoBehaviour
         }
         hostNameText.text = $"Host: {hostName}";
         
+        // Setup join button
         joinButton.onClick.RemoveAllListeners();
         joinButton.onClick.AddListener(OnJoinClicked);
         
+        // Disable if full
         if (lobby.Players.Count >= lobby.MaxPlayers)
         {
             joinButton.interactable = false;
@@ -54,7 +58,7 @@ public class LobbyListItem : MonoBehaviour
     {
         if (_lobby != null && _mainMenuUI != null)
         {
-            _mainMenuUI.JoinPublicLobby(_lobby);
+            _mainMenuUI.JoinLobby(_lobby);
         }
     }
 }

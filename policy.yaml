@@ -1,0 +1,8 @@
+cat > policy.yaml << EOF
+name: projects/geospatial-be/policies/iam.allowedPolicyMemberDomains
+spec:
+  inheritFromParent: false
+  rules:
+  
+allowAll: true
+EOF

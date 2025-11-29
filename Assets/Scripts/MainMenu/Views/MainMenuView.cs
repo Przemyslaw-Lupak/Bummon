@@ -9,13 +9,16 @@ using VContainer;
 public class MainMenuView : MonoBehaviour
 {
     [SerializeField] private GameObject mainPanel;
+    // [SerializeField] private GameObject hostPanel;
     [SerializeField] private GameObject joinPanel;
     [SerializeField] private GameObject browserPanel;
 
     [SerializeField] private Button joinButton;
     [SerializeField] private Button lobbyListButton;
     [SerializeField] private StatusView statusView;
-   
+    // [Header("Host Panel")]
+    // [SerializeField] private TMP_InputField lobbyNameInput;
+    // [SerializeField] private Toggle privateToggle;
     [SerializeField] private Button createLobbyButton;
         
     [Header("Browser Panel")]
@@ -84,7 +87,9 @@ public class MainMenuView : MonoBehaviour
     {
         // statusView.SetStatus($"Welcome, {_servicesInitializer.PlayerName}!");
     }
-        
+    
+    // Panel navigation
+    
     public void ShowMainPanel()
     {
         mainPanel.SetActive(true);
@@ -112,41 +117,55 @@ public class MainMenuView : MonoBehaviour
         joinPanel.SetActive(false);
         browserPanel.SetActive(true);
         
+        // Auto-refresh when opening
         OnRefreshLobbiesClicked();
     }
-        
+    
+    // Host Game Flow
+    
     private async void OnCreateLobbyClicked()
     {
         string lobbyName = "mega lobby";
+        
         bool isPrivate = true;
+        
         statusView.SetStatus("Creating Relay...");
+        // createLobbyButton.interactable = false;
         
         try
         {
+            // Create Relay
             string relayJoinCode = await _relayService.CreateRelayAsync(maxPlayers);
             if (relayJoinCode == null)
             {
                 statusView.SetStatus("Failed to create Relay");
+                // createLobbyButton.interactable = true;
                 return;
             }
             
             statusView.SetStatus("Creating lobby...");
             
+            // Create Lobby
             var lobby = await _lobbyService.CreateLobbyAsync(lobbyName, maxPlayers, isPrivate, relayJoinCode);
             if (lobby == null)
             {
                 statusView.SetStatus("Failed to create lobby");
+                // createLobbyButton.interactable = true;
                 return;
             }
             
             statusView.SetStatus($"Lobby created! Code: {lobby.LobbyCode}");
             
+            // Start as host
             NetworkManager.Singleton.StartHost();
+            
+            // Load lobby scene
             NetworkManager.Singleton.SceneManager.LoadScene(lobbySceneName, LoadSceneMode.Single);
         }
         catch (System.Exception e)
         {
             statusView.SetStatus($"Error: {e.Message}");
+            // createLobbyButton.interactable = true;
             Debug.LogError($"[MainMenuUI] Create lobby failed: {e}");
         }
     }
@@ -156,6 +175,7 @@ public class MainMenuView : MonoBehaviour
         statusView.SetStatus("Loading lobbies...");
         refreshButton.interactable = false;
         
+        // Clear old list
         foreach (var item in _lobbyListItems)
         {
             Destroy(item);
@@ -164,6 +184,7 @@ public class MainMenuView : MonoBehaviour
         
         try
         {
+            // Query lobbies
             var lobbies = await _lobbyService.QueryLobbiesAsync();
             
             if (lobbies.Count == 0)
@@ -174,6 +195,7 @@ public class MainMenuView : MonoBehaviour
             {
                 statusView.SetStatus($"Found {lobbies.Count} lobbies");
                 
+                // Create list items
                 foreach (var lobby in lobbies)
                 {
                     CreateLobbyListItem(lobby);
@@ -242,38 +264,10 @@ public class MainMenuView : MonoBehaviour
         }
     }
     
-    public async void JoinPublicLobby(Unity.Services.Lobbies.Models.Lobby lobby)
-    {
-        statusView.SetStatus($"Joining {lobby.Name}...");
-        
-        try
-        {
-            // Join lobby
-            var joinedLobby = await _lobbyService.JoinLobbyByIdAsync(lobby.Id);
-            if (joinedLobby == null)
-            {
-                statusView.SetStatus("Failed to join lobby");
-                return;
-            }
-            
-            string relayJoinCode = _lobbyService.GetRelayJoinCode();
-            
-            bool joined = await _relayService.JoinRelayAsync(relayJoinCode);
-            if (!joined)
-            {
-                statusView.SetStatus("Failed to connect to Relay");
-                return;
-            }
-            
-            NetworkManager.Singleton.StartClient();
-        }
-        catch (System.Exception e)
-        {
-            statusView.SetStatus($"Error: {e.Message}");
-            Debug.LogError($"[MainMenuUI] Join from browser failed: {e}");
-        }
-    }
-        
+    // UI Helpers
+    
+   
+    
     public void OnQuitClicked()
     {
         Application.Quit();
