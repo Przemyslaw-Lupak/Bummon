@@ -52,9 +52,6 @@ public class LobbyService : ITickable
     {
         try
         {
-            Debug.Log($"[LobbyService] Creating lobby: {lobbyName} (Max: {maxPlayers}, Private: {isPrivate})");
-            Debug.Log($"[LobbyService] Player creating lobby - ID: {_playerIdentityService.PlayerId}");
-            
             CreateLobbyOptions options = new CreateLobbyOptions
             {
                 IsPrivate = isPrivate,
@@ -96,6 +93,24 @@ public class LobbyService : ITickable
         catch (LobbyServiceException e)
         {
             Debug.LogError($"[LobbyService] Failed to join lobby: {e.Message}");
+            return null;
+        }
+    }
+    public async Task<Lobby> JoinLobbyByIdAsync(string lobbyId)
+    {
+        try
+        {
+            JoinLobbyByIdOptions options = new JoinLobbyByIdOptions
+            {
+                Player = GetPlayer()
+            };
+
+            CurrentLobby = await Unity.Services.Lobbies.LobbyService.Instance.JoinLobbyByIdAsync(lobbyId, options);
+            return CurrentLobby;
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[LobbyService] Join lobby by ID failed: {e}");
             return null;
         }
     }
@@ -213,18 +228,9 @@ public class LobbyService : ITickable
     
     public async Task SetLobbyPrivacyAsync(bool privateStatus)
     {
-        if (CurrentLobby == null)
-        {
-            Debug.LogWarning("[LobbyService] Cannot set privacy - no current lobby");
-            return;
-        }
+        if (CurrentLobby == null) return;
+        if (!IsHost) return;
         
-        if (!IsHost)
-        {
-            Debug.LogWarning($"[LobbyService] Cannot set privacy - not host. CurrentPlayerId: {_playerIdentityService.PlayerId}, HostId: {CurrentLobby.HostId}");
-            return;
-        }
-
         try
         {
             Debug.Log($"[LobbyService] Setting lobby privacy to: {(privateStatus ? "Private" : "Public")}");
@@ -243,6 +249,22 @@ public class LobbyService : ITickable
             Debug.LogError($"[LobbyService] Failed to update lobby privacy: {e.Message}");
         }
     }
+
+    public async Task<Lobby> GetCurrentLobbyAsync()
+{
+    if (CurrentLobby == null) return null;
+    
+    try
+    {
+        CurrentLobby = await Unity.Services.Lobbies.LobbyService.Instance.GetLobbyAsync(CurrentLobby.Id);
+        return CurrentLobby;
+    }
+    catch (System.Exception e)
+    {
+        Debug.LogError($"[LobbyService] Failed to get lobby: {e}");
+        return null;
+    }
+}
     
     public async Task OnDestroy()
     {

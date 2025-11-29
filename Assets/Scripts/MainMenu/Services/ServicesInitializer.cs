@@ -36,7 +36,6 @@ public class ServicesInitializer : IInitializable
             string playerId = AuthenticationService.Instance.PlayerId;
             string playerName = GenerateRandomName();
             
-            // Initialize player identity
             _playerIdentityService.Initialize(playerId, playerName);
             
             Debug.Log($"[ServicesInitializer] ✓ Services initialized! PlayerId: {playerId}");
