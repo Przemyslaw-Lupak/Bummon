@@ -58,7 +58,7 @@ public class LobbyListItem : MonoBehaviour
     {
         if (_lobby != null && _mainMenuUI != null)
         {
-            _mainMenuUI.JoinLobby(_lobby);
+            _mainMenuUI.JoinPublicLobby(_lobby);
         }
     }
 }

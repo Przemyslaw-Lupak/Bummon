@@ -205,7 +205,7 @@ GameObject:
   - component: {fileID: 176583576}
   - component: {fileID: 176583577}
   m_Layer: 0
-  m_Name: Scope
+  m_Name: MainScope
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
